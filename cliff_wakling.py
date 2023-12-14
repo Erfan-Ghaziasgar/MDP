@@ -95,15 +95,19 @@ class CliffWalking(CliffWalkingEnv):
                 case 0:
                     action = np.random.choice(
                         [0, 1, 3], p=[1 / 3, 1 / 3, 1 / 3])
+                    # action = 0
                 case 1:
                     action = np.random.choice(
                         [0, 1, 2], p=[1 / 3, 1 / 3, 1 / 3])
+                    # action = 1
                 case 2:
                     action = np.random.choice(
                         [1, 2, 3], p=[1 / 3, 1 / 3, 1 / 3])
+                    # action = 2
                 case 3:
                     action = np.random.choice(
                         [0, 2, 3], p=[1 / 3, 1 / 3, 1 / 3])
+                    # action = 3
 
         return super().step(action)
 
@@ -112,7 +116,7 @@ class CliffWalking(CliffWalkingEnv):
             import pygame
         except ImportError as e:
             raise DependencyNotInstalled(
-                "pygame is not installed, run `pip install gymnasium[toy-text]`" # noqa E501
+                "pygame is not installed, run `pip install gymnasium[toy-text]`"  # noqa E501
             ) from e
         if self.window_surface is None:
             pygame.init()
@@ -209,19 +213,35 @@ observation, info = env.reset(seed=30)
 
 # Define the maximum number of iterations
 max_iter_number = 1000
+gamma = 0.9
 
-for __ in range(max_iter_number):
-    # TODO: Implement the agent policy here
-    # Note: .sample() is used to sample random action from the environment's action space
+# Initialize the value function and policy
+V = np.zeros(env.nS)
+Q = np.zeros((env.nS, env.nA))
+policy = np.zeros(env.nS)
 
-    # Choose an action (Replace this random action with your agent's policy)
-    action = env.action_space.sample()
+for _ in range(max_iter_number):
+    # Perform value iteration
+    for s in range(env.nS):
+        for a in range(env.nA):
+            Q[s, a] = sum([p * (r + gamma * V[s_])
+                           for p, s_, r, _ in env.P[s][a]])
+
+    # Update the policy
+    policy = np.argmax(Q, axis=1)
+
+    # Choose an action based on the policy
+    action = policy[env.s]
 
     # Perform the action and receive feedback from the environment
     next_state, reward, done, truncated, info = env.step(action)
 
+    # Update the value function
+    V[env.s] = sum([p * (r + gamma * V[s_])
+                    for p, s_, r, _ in env.P[env.s][action]])
+
     if done or truncated:
-        observation, info = env.reset()
+        observation, info = env.reset(seed=30)
 
 # Close the environment
 env.close()
