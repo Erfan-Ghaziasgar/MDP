@@ -220,6 +220,9 @@ V = np.zeros(env.nS)
 Q = np.zeros((env.nS, env.nA))
 policy = np.zeros(env.nS)
 
+# Open a file to save V values
+f = open("value.txt", "w")
+
 for _ in range(max_iter_number):
     # Perform value iteration
     for s in range(env.nS):
@@ -227,21 +230,42 @@ for _ in range(max_iter_number):
             Q[s, a] = sum([p * (r + gamma * V[s_])
                            for p, s_, r, _ in env.P[s][a]])
 
+    # Update the value function
+    V = np.max(Q, axis=1)
+
+    # Save the value function
+    f.write(str(V) + "\n")
+
     # Update the policy
     policy = np.argmax(Q, axis=1)
 
-    # Choose an action based on the policy
-    action = policy[env.s]
+# Close the file
+f.close()
 
-    # Perform the action and receive feedback from the environment
-    next_state, reward, done, truncated, info = env.step(action)
+for _ in range(10):
+    # Reset the environment
+    observation, info = env.reset(seed=30)
 
-    # Update the value function
-    V[env.s] = sum([p * (r + gamma * V[s_])
-                    for p, s_, r, _ in env.P[env.s][action]])
+    # Render the environment
+    env.render()
 
-    if done or truncated:
-        observation, info = env.reset(seed=30)
+    # Define the maximum number of iterations
+    max_iter_number = 1000
+
+    # Perform the policy
+    for _ in range(max_iter_number):
+        # Select an action
+        action = policy[observation]
+
+        # Perform the action
+        observation, reward, done, truncated, info = env.step(action)
+
+        # Render the environment
+        env.render()
+
+        # Check if it's done
+        if done or truncated:
+            break
 
 # Close the environment
 env.close()
